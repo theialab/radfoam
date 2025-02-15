@@ -1,0 +1,34 @@
+# Model Parameters
+sh_degree: 3
+init_points: 131_072
+final_points: 4_194_304
+activation_scale: 1
+device: cuda
+
+# Pipeline Parameters
+iterations: 20_000
+densify_from: 2_000
+densify_until: 11_000
+densify_factor: 1.15
+white_background: true
+quantile_weight: 1e-4
+viewer: false                          # Flag to use viewer
+debug: false                           # Flag to not use tensorboard
+
+# Optimization Parameters
+points_lr_init: 2e-4
+points_lr_final: 5e-6
+density_lr_init: 1e-1
+density_lr_final: 1e-2
+attributes_lr_init: 5e-3
+attributes_lr_final: 5e-4
+sh_factor: 0.02
+freeze_points: 18_000                  # Points are frozen after this cycle
+
+# Dataset Parameters
+dataset: "colmap"
+data_path: "data/mipnerf360"
+scene: "garden"
+patch_based: false
+downsample: [8, 4]                     # Image downsample factors
+downsample_iterations: [0, 5_000]

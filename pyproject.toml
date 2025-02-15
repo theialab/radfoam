@@ -1,0 +1,12 @@
+[build-system]
+requires = [
+    "setuptools>=64",
+    "pybind11",
+    "glfw==2.6.5",
+    "tbb",
+    "cmake_build_extension",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 80

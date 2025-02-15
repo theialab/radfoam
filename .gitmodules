@@ -1,0 +1,21 @@
+[submodule "external/submodules/glfw"]
+	path = external/submodules/glfw
+	url = https://github.com/glfw/glfw
+[submodule "external/submodules/eigen"]
+	path = external/submodules/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "external/submodules/imgui"]
+	path = external/submodules/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "data_loader/pycolmap"]
+	path = data_loader/pycolmap
+	url = https://github.com/rmbrualla/pycolmap.git
+[submodule "external/submodules/atomic_queue"]
+	path = external/submodules/atomic_queue
+	url = https://github.com/max0x7ba/atomic_queue
+[submodule "external/submodules/mesa"]
+	path = external/submodules/mesa
+	url = https://gitlab.freedesktop.org/mesa/mesa.git
+[submodule "external/submodules/tbb"]
+	path = external/submodules/tbb
+	url = https://github.com/uxlfoundation/oneTBB

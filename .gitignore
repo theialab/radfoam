@@ -1,0 +1,12 @@
+.vscode
+/build*/
+/dist/
+/data
+/radfoam/
+/*output*
+
+*.egg-info
+__pycache__
+/*nsight
+*.mp4b
+*ipynb

@@ -1,0 +1,16 @@
+ConfigArgParse
+cmake==3.29.2
+cmake-format
+cmake_build_extension
+einops
+glfw==2.6.5
+kornia
+opencv-python
+pillow
+plyfile
+pybind11[global]
+pyyaml
+scipy
+tbb
+tensorboard
+tqdm
