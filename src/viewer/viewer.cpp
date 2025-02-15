@@ -534,6 +534,10 @@ struct ViewerPrivate : public Viewer {
     std::vector<uint8_t> points_cpu;
     std::vector<uint8_t> aabb_tree_cpu;
 
+    // New members for fallback
+    bool is_cuda_gl_interop_supported;
+    std::vector<uint8_t> cpu_fallback_buffer;
+
     std::mutex scene_mutex;
     std::condition_variable scene_cv;
 
@@ -545,7 +549,7 @@ struct ViewerPrivate : public Viewer {
     std::atomic_bool scene_updating;
 
     ViewerPrivate(std::shared_ptr<Pipeline> pipeline, ViewerOptions options)
-        : pipeline(pipeline), options(options), scene_mutex() {
+        : pipeline(pipeline), options(options), scene_mutex(), is_cuda_gl_interop_supported(false) {
 
         if (!glfwInit()) {
             throw std::runtime_error("GLFW initialization failed");
@@ -594,16 +598,17 @@ struct ViewerPrivate : public Viewer {
 
         uint32_t gl_device_count;
         CUdevice cuda_devices[16];
-        cuda_check(cuGLGetDevices(
-            &gl_device_count, cuda_devices, 16, CU_GL_DEVICE_LIST_ALL));
-        if (gl_device_count == 0) {
-            throw std::runtime_error("no CUDA-GL interop devices found");
+        CUresult res = cuGLGetDevices(&gl_device_count, cuda_devices, 16, CU_GL_DEVICE_LIST_ALL);
+        if (res != CUDA_SUCCESS || gl_device_count == 0) {
+            is_cuda_gl_interop_supported = false;
+            // Fallback to CPU transfer: use device 0 by default
+            cuda_check(cuDeviceGet(&gl_device, 0));
+        } else if (gl_device_count > 1) {
+            throw std::runtime_error("multiple CUDA-GL interop devices found, this is not currently supported");
+        } else {
+            is_cuda_gl_interop_supported = true;
+            gl_device = cuda_devices[0];
         }
-        if (gl_device_count > 1) {
-            throw std::runtime_error("multiple CUDA-GL interop devices found, "
-                                     "this is not currently supported");
-        }
-        gl_device = cuda_devices[0];
 
         cuda_check(cuDevicePrimaryCtxRetain(&cuda_context, gl_device));
         cuda_check(cuCtxPushCurrent(cuda_context));
@@ -620,11 +625,16 @@ struct ViewerPrivate : public Viewer {
                          height);
         program = create_program();
         texture = allocate_texture(width, height);
-        resource = register_texture(texture);
+        if (is_cuda_gl_interop_supported) {
+            resource = register_texture(texture);
+        }
+
     }
 
     ~ViewerPrivate() {
-        cuda_check(cuGraphicsUnregisterResource(resource));
+        if (is_cuda_gl_interop_supported) {
+            cuda_check(cuGraphicsUnregisterResource(resource));
+        }
         gl_check(glDeleteTextures(1, &texture));
         gl_check(glDeleteProgram(program));
         glfwDestroyWindow(window);
@@ -853,12 +863,20 @@ struct ViewerPrivate : public Viewer {
                                               aabb_tree_cpu.data(),
                                               *camera.position,
                                               num_points);
+                CUarray output_array = nullptr;
+                CUsurfObject output_surface = 0;
+                if (is_cuda_gl_interop_supported) {
+                    cuda_check(cuGraphicsMapResources(1, &resource, 0));
+                    cuda_check(cuGraphicsSubResourceGetMappedArray(&output_array, resource, 0, 0));
+                } else {
+                    CUDA_ARRAY_DESCRIPTOR arrDesc = {};
+                    arrDesc.Format = CU_AD_FORMAT_UNSIGNED_INT8;
+                    arrDesc.NumChannels = 4;
+                    arrDesc.Width = camera.width;
+                    arrDesc.Height = camera.height;
+                    cuda_check(cuArrayCreate(&output_array, &arrDesc));
+                }
 
-                cuda_check(cuGraphicsMapResources(1, &resource, 0));
-                CUarray output_array;
-                cuda_check(cuGraphicsSubResourceGetMappedArray(
-                    &output_array, resource, 0, 0));
-                CUsurfObject output_surface;
                 CUDA_RESOURCE_DESC res_desc = {};
                 res_desc.resType = CU_RESOURCE_TYPE_ARRAY;
                 res_desc.res.array.hArray = output_array;
@@ -880,14 +898,53 @@ struct ViewerPrivate : public Viewer {
                     output_surface,
                     &cuda_stream);
 
-                cuda_check(cuSurfObjectDestroy(output_surface));
-                cuda_check(cuGraphicsUnmapResources(1, &resource, 0));
+                if (is_cuda_gl_interop_supported) {
+                    cuda_check(cuSurfObjectDestroy(output_surface));
+                    cuda_check(cuGraphicsUnmapResources(1, &resource, 0));
+                } else {
+                    cuda_check(cuStreamSynchronize(cuda_stream));
+                    cuda_check(cuSurfObjectDestroy(output_surface));
+
+                    size_t buffer_size = camera.width * camera.height * 4; // RGBA8
+                    if (cpu_fallback_buffer.size() != buffer_size) {
+                        cpu_fallback_buffer.resize(buffer_size);
+                    }
+
+                    CUDA_MEMCPY2D copyParam = {0};
+                    copyParam.srcXInBytes = 0;
+                    copyParam.srcY = 0;
+                    copyParam.srcMemoryType = CU_MEMORYTYPE_ARRAY;
+                    copyParam.srcArray = output_array;
+                    copyParam.dstXInBytes = 0;
+                    copyParam.dstY = 0;
+                    copyParam.dstMemoryType = CU_MEMORYTYPE_HOST;
+                    copyParam.dstHost = cpu_fallback_buffer.data();
+                    copyParam.WidthInBytes = camera.width * 4;
+                    copyParam.Height = camera.height;
+                    cuda_check(cuMemcpy2D(&copyParam));
+                    cuda_check(cuArrayDestroy(output_array));
+                }
 
                 gl_check(glBindTexture(GL_TEXTURE_2D, texture));
                 gl_check(glDrawArrays(GL_TRIANGLE_STRIP, 0, 4));
+                if (!is_cuda_gl_interop_supported) {
+                    gl_check(glTexImage2D(GL_TEXTURE_2D,
+                                          0,
+                                          GL_RGBA8,
+                                          camera.width,
+                                          camera.height,
+                                          0,
+                                          GL_RGBA,
+                                          GL_UNSIGNED_BYTE,
+                                          cpu_fallback_buffer.data()));
+                }
                 gl_check(glBindTexture(GL_TEXTURE_2D, 0));
 
-                cuda_check(cuStreamSynchronize(cuda_stream));
+                if (is_cuda_gl_interop_supported) {
+                    cuda_check(cuStreamSynchronize(cuda_stream));
+                } else {
+                    cuda_check(cuStreamSynchronize(0));
+                }
             }
 
             ImGui::End();
@@ -1041,10 +1098,14 @@ struct ViewerPrivate : public Viewer {
         self->camera.width = width;
         self->camera.height = height;
 
-        cuda_check(cuGraphicsUnregisterResource(self->resource));
+        if (self->is_cuda_gl_interop_supported) {
+            cuda_check(cuGraphicsUnregisterResource(self->resource));
+        }
         gl_check(glDeleteTextures(1, &self->texture));
         self->texture = allocate_texture(width, height);
-        self->resource = register_texture(self->texture);
+        if (self->is_cuda_gl_interop_supported) {
+            self->resource = register_texture(self->texture);
+        }
     }
 
     static void handle_key(
