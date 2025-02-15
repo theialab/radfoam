@@ -53,7 +53,7 @@ This will install to a local `radfoam` directory in the repository root. Recompi
 
 ### Training
 
-Place the [Mip-NeRF 360]() and [Deep Blending]() datasets in `data/mipnerf360` and `data/db`.
+Place the [Mip-NeRF 360](https://jonbarron.info/mipnerf360) and [Deep Blending](https://github.com/Phog/DeepBlending) datasets in `data/mipnerf360` and `data/db`.
 
 Training can then be launched with:
 
