@@ -11,6 +11,5 @@ plyfile
 pybind11[global]
 pyyaml
 scipy
-tbb
 tensorboard
 tqdm

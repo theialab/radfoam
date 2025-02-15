@@ -47,9 +47,13 @@ target_include_directories(
   imgui PUBLIC "submodules/imgui" "submodules/glfw/include"
                "submodules/mesa/include")
 
+find_package(TBB GLOBAL)
+if(NOT TBB_FOUND)
+    add_subdirectory(submodules/tbb)
+endif()
+
 set(RADFOAM_EXTERNAL_INCLUDES
     "${CMAKE_SOURCE_DIR}/external/include"
     "${CMAKE_SOURCE_DIR}/external/submodules/imgui"
     "${CMAKE_SOURCE_DIR}/external/submodules/imgui/backends"
-    "${CMAKE_SOURCE_DIR}/external/submodules/tbb/include"
     PARENT_SCOPE)
