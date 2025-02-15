@@ -26,6 +26,4 @@ if @USE_PIP_GLFW@:
     if handle is None:
         raise ImportError("failed to load libglfw.so")
 
-import tbb
-
 from .torch_bindings import *
