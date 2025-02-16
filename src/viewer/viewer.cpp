@@ -19,6 +19,10 @@
 #include "../utils/cuda_helpers.h"
 #include "viewer.h"
 
+void glfwErrorCallback(int error, const char* description) {
+    std::cerr << "GLFW Error (" << error << "): " << description << std::endl;
+}
+
 namespace radfoam {
 
 namespace {
@@ -551,6 +555,7 @@ struct ViewerPrivate : public Viewer {
     ViewerPrivate(std::shared_ptr<Pipeline> pipeline, ViewerOptions options)
         : pipeline(pipeline), options(options), scene_mutex(), is_cuda_gl_interop_supported(false) {
 
+        glfwSetErrorCallback(glfwErrorCallback);
         if (!glfwInit()) {
             throw std::runtime_error("GLFW initialization failed");
         }
