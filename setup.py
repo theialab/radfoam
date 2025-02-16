@@ -22,23 +22,28 @@ source_dir = Path(__file__).parent.absolute()
 cmake = (source_dir / "CMakeLists.txt").read_text()
 version = re.search(r"project\(\S+ VERSION (\S+)\)", cmake).group(1)
 
-def read_requirements():
-    requirements_file = Path(__file__).parent / "requirements.txt"
-    if requirements_file.exists():
-        with open(requirements_file, "r") as f:
-            reqs = [
-                line.strip()
-                for line in f.readlines()
-                if line.strip() and not line.startswith("#")
-            ]
-
-        return reqs
-    return []
+install_requirements = [
+    "cmake==3.29.2",
+    "cmake-format",
+    "cmake_build_extension",
+    "ConfigArgParse",
+    "einops",
+    "glfw==2.6.5",
+    "kornia",
+    "opencv-python",
+    "pillow",
+    "plyfile",
+    "pybind11[global]",
+    "pyyaml",
+    "scipy",
+    "tensorboard",
+    "tqdm",
+]
 
 
 setuptools.setup(
     version=version,
-    install_requires=read_requirements(),
+    install_requires=install_requirements,
     ext_modules=[
         cmake_build_extension.CMakeExtension(
             name="RadFoamBindings",
