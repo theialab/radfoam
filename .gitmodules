@@ -9,7 +9,7 @@
 	url = https://github.com/ocornut/imgui
 [submodule "data_loader/pycolmap"]
 	path = data_loader/pycolmap
-	url = https://github.com/rmbrualla/pycolmap.git
+	url = https://github.com/theialab/pycolmap.git
 [submodule "external/submodules/atomic_queue"]
 	path = external/submodules/atomic_queue
 	url = https://github.com/max0x7ba/atomic_queue
