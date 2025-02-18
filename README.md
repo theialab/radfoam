@@ -76,7 +76,7 @@ Rendering speed can be computed with:
 
 ### Checkpoints
 
-Pre-trained checkpoints will be available soon.
+You can find trained checkpoints, as well as COLMAP output for some scenes [here](https://drive.google.com/drive/folders/1o8ulZORogwjrfsz3E-QY3f-oPjVFrEVI?usp=drive_link).
 
 ## BibTeX
 
