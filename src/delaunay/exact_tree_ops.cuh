@@ -8,6 +8,12 @@
 
 namespace radfoam {
 
+__forceinline__ __device__ uint32_t warp_broadcast(uint32_t value, bool pred) {
+    uint32_t mask = __ballot_sync(0xffffffff, pred);
+    uint32_t lane_id = __ffs(mask) - 1;
+    return __shfl_sync(0xffffffff, value, lane_id);
+}
+
 /// @brief Find the nearest neighbours of points in the point set
 inline __device__ uint32_t
 vertex_nearest_neighbour(const Vec3f *points,
@@ -352,11 +358,8 @@ inline __device__ uint32_t maximal_empty_sphere(const Vec3f *points,
         flag &= !should_ignore;
 
         if (__any_sync(0xffffffff, flag)) {
-            uint32_t t = 0;
-            if (sphere_predicate.warp_update(point, flag, found)) {
-                t = point_idx;
-            }
-            tangent_idx = __reduce_or_sync(0xffffffff, t);
+            bool pred = sphere_predicate.warp_update(point, flag, found);
+            tangent_idx = warp_broadcast(point_idx, pred);
         }
     }
 
@@ -388,11 +391,8 @@ inline __device__ uint32_t maximal_empty_sphere(const Vec3f *points,
         flag &= !should_ignore;
 
         if (__any_sync(0xffffffff, flag)) {
-            uint32_t t = 0;
-            if (sphere_predicate.warp_update(point, flag, found)) {
-                t = point_idx;
-            }
-            tangent_idx = __reduce_or_sync(0xffffffff, t);
+            bool pred = sphere_predicate.warp_update(point, flag, found);
+            tangent_idx = warp_broadcast(point_idx, pred);
         }
     };
 
