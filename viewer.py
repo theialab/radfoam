@@ -24,7 +24,7 @@ def viewer(args, pipeline_args, model_args, optimizer_args, dataset_args):
     test_data_handler = DataHandler(
         dataset_args, rays_per_batch=0, device=device
     )
-    test_data_handler.reload(split="test", downsample=8)
+    test_data_handler.reload(split="test", downsample=min(dataset_args.downsample))
 
     # Define viewer settings
     viewer_options = {
