@@ -776,7 +776,9 @@ class CUDATracingPipeline : public Pipeline {
 std::shared_ptr<Pipeline> create_pipeline(int sh_degree, ScalarType attr_type) {
 
     if (attr_type == ScalarType::Float32) {
-        if (sh_degree == 1) {
+        if (sh_degree == 0) {
+            return std::make_shared<CUDATracingPipeline<float, 0>>();
+        } else if (sh_degree == 1) {
             return std::make_shared<CUDATracingPipeline<float, 1>>();
         } else if (sh_degree == 2) {
             return std::make_shared<CUDATracingPipeline<float, 2>>();
@@ -786,7 +788,9 @@ std::shared_ptr<Pipeline> create_pipeline(int sh_degree, ScalarType attr_type) {
             throw std::runtime_error("Unsupported SH degree");
         }
     } else if (attr_type == ScalarType::Float16) {
-        if (sh_degree == 1) {
+        if (sh_degree == 0) {
+            return std::make_shared<CUDATracingPipeline<__half, 0>>();
+        } else if (sh_degree == 1) {
             return std::make_shared<CUDATracingPipeline<__half, 1>>();
         } else if (sh_degree == 2) {
             return std::make_shared<CUDATracingPipeline<__half, 2>>();
