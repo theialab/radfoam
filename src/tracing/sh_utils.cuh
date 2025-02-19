@@ -83,9 +83,9 @@ __device__ Vec3f load_sh_as_rgb(const Vecf<sh_dimension(degree)> &coeffs,
 }
 
 template <typename scalar, int degree>
-__device__ Vec3f write_rgb_grad_to_sh(const Vecf<sh_dimension(degree)> &coeffs,
-                                      Vec3f grad_rgb,
-                                      scalar *sh_rgb_grad) {
+__device__ void write_rgb_grad_to_sh(const Vecf<sh_dimension(degree)> &coeffs,
+                                     Vec3f grad_rgb,
+                                     scalar *sh_rgb_grad) {
     for (uint32_t i = 0; i < 3 * sh_dimension(degree); ++i) {
         atomicAdd(sh_rgb_grad + i, (scalar)(coeffs[i / 3] * grad_rgb[i % 3]));
     }

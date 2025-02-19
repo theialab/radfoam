@@ -32,7 +32,7 @@ class BatchFetcherImpl : public BatchFetcher {
                      size_t stride,
                      size_t batch_size,
                      bool shuffle)
-        : done(false), worker_exception(nullptr) {
+        : worker_exception(nullptr), done(false) {
 
         CUcontext context;
         cuda_check(cuCtxGetCurrent(&context));
@@ -123,7 +123,7 @@ class BatchFetcherImpl : public BatchFetcher {
     }
 
     void *next() override {
-        Batch batch;
+        Batch batch = {};
         while (!done && !queue.try_pop(batch)) {
             std::this_thread::yield();
         }

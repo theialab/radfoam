@@ -19,7 +19,7 @@
 #include "../utils/cuda_helpers.h"
 #include "viewer.h"
 
-void glfwErrorCallback(int error, const char* description) {
+void glfwErrorCallback(int error, const char *description) {
     std::cerr << "GLFW Error (" << error << "): " << description << std::endl;
 }
 
@@ -553,7 +553,8 @@ struct ViewerPrivate : public Viewer {
     std::atomic_bool scene_updating;
 
     ViewerPrivate(std::shared_ptr<Pipeline> pipeline, ViewerOptions options)
-        : pipeline(pipeline), options(options), scene_mutex(), is_cuda_gl_interop_supported(false) {
+        : pipeline(pipeline), options(options),
+          is_cuda_gl_interop_supported(false), scene_mutex() {
 
         glfwSetErrorCallback(glfwErrorCallback);
         if (!glfwInit()) {
@@ -565,7 +566,7 @@ struct ViewerPrivate : public Viewer {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         window =
-            glfwCreateWindow(1920, 1080, "TetRend Viewer", nullptr, nullptr);
+            glfwCreateWindow(1920, 1080, "RadFoam Viewer", nullptr, nullptr);
         if (!window) {
             glfwTerminate();
             throw std::runtime_error("GLFW window creation failed");
@@ -603,13 +604,15 @@ struct ViewerPrivate : public Viewer {
 
         uint32_t gl_device_count;
         CUdevice cuda_devices[16];
-        CUresult res = cuGLGetDevices(&gl_device_count, cuda_devices, 16, CU_GL_DEVICE_LIST_ALL);
+        CUresult res = cuGLGetDevices(
+            &gl_device_count, cuda_devices, 16, CU_GL_DEVICE_LIST_ALL);
         if (res != CUDA_SUCCESS || gl_device_count == 0) {
             is_cuda_gl_interop_supported = false;
             // Fallback to CPU transfer: use device 0 by default
             cuda_check(cuDeviceGet(&gl_device, 0));
         } else if (gl_device_count > 1) {
-            throw std::runtime_error("multiple CUDA-GL interop devices found, this is not currently supported");
+            throw std::runtime_error("multiple CUDA-GL interop devices found, "
+                                     "this is not currently supported");
         } else {
             is_cuda_gl_interop_supported = true;
             gl_device = cuda_devices[0];
@@ -633,7 +636,6 @@ struct ViewerPrivate : public Viewer {
         if (is_cuda_gl_interop_supported) {
             resource = register_texture(texture);
         }
-
     }
 
     ~ViewerPrivate() {
@@ -670,9 +672,6 @@ struct ViewerPrivate : public Viewer {
         GLuint array;
         gl_check(glGenVertexArrays(1, &array));
         gl_check(glBindVertexArray(array));
-
-        auto normal_cursor = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-        auto drag_cursor = glfwCreateStandardCursor(GLFW_HAND_CURSOR);
 
         TraceSettings settings = default_trace_settings();
         settings.weight_threshold = 0.05f;
@@ -872,7 +871,8 @@ struct ViewerPrivate : public Viewer {
                 CUsurfObject output_surface = 0;
                 if (is_cuda_gl_interop_supported) {
                     cuda_check(cuGraphicsMapResources(1, &resource, 0));
-                    cuda_check(cuGraphicsSubResourceGetMappedArray(&output_array, resource, 0, 0));
+                    cuda_check(cuGraphicsSubResourceGetMappedArray(
+                        &output_array, resource, 0, 0));
                 } else {
                     CUDA_ARRAY_DESCRIPTOR arrDesc = {};
                     arrDesc.Format = CU_AD_FORMAT_UNSIGNED_INT8;
@@ -910,7 +910,8 @@ struct ViewerPrivate : public Viewer {
                     cuda_check(cuStreamSynchronize(cuda_stream));
                     cuda_check(cuSurfObjectDestroy(output_surface));
 
-                    size_t buffer_size = camera.width * camera.height * 4; // RGBA8
+                    size_t buffer_size =
+                        camera.width * camera.height * 4; // RGBA8
                     if (cpu_fallback_buffer.size() != buffer_size) {
                         cpu_fallback_buffer.resize(buffer_size);
                     }
