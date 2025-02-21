@@ -7,6 +7,12 @@ namespace radfoam {
 /// @brief An output iterator that removes the key from a key-value pair
 template <typename T>
 struct UnenumerateIterator {
+    using value_type = void;
+    using reference = void;
+    using pointer = void;
+    using difference_type = ptrdiff_t;
+    using iterator_category = std::output_iterator_tag;
+
     T *ptr;
 
     __host__ __device__ __forceinline__ UnenumerateIterator() : ptr(nullptr) {}
