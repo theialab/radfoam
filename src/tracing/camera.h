@@ -43,7 +43,7 @@ inline RADFOAM_HD Camera look_at(const Vec3f &position,
     Camera camera;
     camera.position = position;
     camera.forward = (target - position).normalized();
-    camera.right = camera.forward->cross(up);
+    camera.right = camera.forward->cross(up).normalized();
     camera.up = camera.right->cross(*camera.forward).normalized();
     camera.fov = fov;
     camera.width = width;
