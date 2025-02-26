@@ -574,10 +574,11 @@ struct ViewerPrivate : public Viewer {
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, &ViewerPrivate::handle_resize);
         glfwSetKeyCallback(window, &ViewerPrivate::handle_key);
-
+        glfwMakeContextCurrent(window);
         if (!gl3w_initialized) {
-            if (!gl3wInit()) {
-                throw std::runtime_error("GL3W initialization failed");
+            auto res = gl3wInit();
+            if (res != 0) {
+                throw std::runtime_error("GL3W initialization failed with error code: " + std::to_string(res));
             }
             gl3w_initialized = true;
         }
@@ -854,7 +855,7 @@ struct ViewerPrivate : public Viewer {
                                        ImGuiSliderFlags_NoRoundToFormat);
                 float percentile = vis_settings.depth_quantile * 100.0f;
                 ImGui::SliderFloat(
-                    "Depth percentile", &percentile, 0.0f, 100.0f, "%.0f\%");
+                    "Depth percentile", &percentile, 0.0f, 100.0f, "%.0f%%");
                 vis_settings.depth_quantile = percentile / 100.0f;
             }
 
@@ -986,7 +987,7 @@ struct ViewerPrivate : public Viewer {
                     frame_duration)
                     .count();
             float w = 1000.0f * frame_duration_seconds * frame_duration_seconds;
-            w = std::min(1.0f, w);
+            w = (std::min)(1.0f, w);
             frame_rate = (1.0f - w) * frame_rate + w / frame_duration_seconds;
 
             delta_t = frame_duration_seconds;
