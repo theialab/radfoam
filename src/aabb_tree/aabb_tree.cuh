@@ -32,7 +32,7 @@ enum TraversalAction {
     Terminate,
 };
 
-__forceinline__ __host__ int host_ffs(unsigned int x) {
+__forceinline__ __host__ int host_ffs(uint32_t x) {
     if (x == 0) return 0;
 
 #if defined(_WIN32) || defined(_WIN64)
