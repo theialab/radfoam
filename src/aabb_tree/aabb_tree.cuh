@@ -32,13 +32,13 @@ enum TraversalAction {
     Terminate,
 };
 
-__forceinline__ __host__ int host_ffs(int x) {
+__forceinline__ __host__ int host_ffs(unsigned int x) {
     if (x == 0) return 0;
 
 #if defined(_WIN32) || defined(_WIN64)
     unsigned long index;
     if (_BitScanForward(&index, static_cast<unsigned long>(x))) {
-        return static_cast<int>(index + 1) - 1;
+        return static_cast<int>(index);
     }
     return 0;
 #else
