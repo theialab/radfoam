@@ -29,7 +29,7 @@ install_requirements = [
     "ConfigArgParse",
     "einops",
     "glfw==2.6.5",
-    "kornia",
+    "pycolmap",
     "opencv-python",
     "pillow",
     "plyfile",

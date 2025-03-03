@@ -3,7 +3,6 @@ import os
 import numpy as np
 import einops
 import torch
-from torch.utils.data import DataLoader
 
 import radfoam
 
@@ -32,56 +31,6 @@ def get_up(c2ws):
     return global_up
 
 
-def get_dataloader(
-    dataset_args,
-    split,
-    rays_per_batch=65_536,
-    downsample=None,
-    shuffle_data=True,
-):
-    data_dir = os.path.join(dataset_args.data_path, dataset_args.scene)
-    dataset = dataset_dict[dataset_args.dataset]
-    if downsample is not None:
-        split_dataset = dataset(
-            data_dir, split=split, downsample=downsample, is_stack=True
-        )
-    else:
-        split_dataset = dataset(data_dir, split=split, is_stack=True)
-
-    if split == "train":
-        n_rays = np.prod(split_dataset.all_rays.shape[:-1])
-        inds = np.random.choice(n_rays, n_rays, replace=False)
-        split_dataset.all_rays = split_dataset.all_rays.reshape(n_rays, 6)[inds]
-        split_dataset.all_rgbs = split_dataset.all_rgbs.reshape(n_rays, 3)[inds]
-
-        rem = n_rays % rays_per_batch
-        split_dataset.all_rays = split_dataset.all_rays[: n_rays - rem]
-        split_dataset.all_rgbs = split_dataset.all_rgbs[: n_rays - rem]
-
-        split_dataset.all_rays = split_dataset.all_rays.reshape(
-            -1, rays_per_batch, 6
-        )
-        split_dataset.all_rgbs = split_dataset.all_rgbs.reshape(
-            -1, rays_per_batch, 3
-        )
-
-    dataloader = DataLoader(
-        split_dataset,
-        batch_size=1,
-        shuffle=shuffle_data,
-        num_workers=1,
-        pin_memory=True,
-        prefetch_factor=2,
-    )
-
-    if hasattr(split_dataset, "cameras") and split_dataset.cameras is not None:
-        cameras = split_dataset.cameras
-    else:
-        cameras = None
-
-    return dataloader, cameras
-
-
 class DataHandler:
     def __init__(self, dataset_args, rays_per_batch, device="cuda"):
         self.args = dataset_args
@@ -95,15 +44,15 @@ class DataHandler:
         dataset = dataset_dict[self.args.dataset]
         if downsample is not None:
             split_dataset = dataset(
-                data_dir, split=split, downsample=downsample, is_stack=True
+                data_dir, split=split, downsample=downsample
             )
         else:
-            split_dataset = dataset(data_dir, split=split, is_stack=True)
+            split_dataset = dataset(data_dir, split=split)
         self.img_wh = split_dataset.img_wh
+        self.fx = split_dataset.fx
+        self.fy = split_dataset.fy
         self.c2ws = split_dataset.poses
-        self.K = split_dataset.intrinsics
         self.rays, self.rgbs = split_dataset.all_rays, split_dataset.all_rgbs
-        self.cameras = split_dataset.cameras
 
         self.viewer_up = get_up(self.c2ws)
         self.viewer_pos = self.c2ws[0, :3, 3]

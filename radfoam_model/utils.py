@@ -1,9 +1,6 @@
 import numpy as np
 import torch
 
-from data_loader.ray_utils import *
-import radfoam
-
 
 def inverse_softplus(x, beta, scale=1):
     # log(exp(scale*x)-1)/scale
