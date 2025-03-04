@@ -4,7 +4,7 @@ cmake_build_extension==0.6.1
 ConfigArgParse==1.7
 einops==0.8.1
 glfw==2.6.5
-kornia==0.8.0
+pycolmap==3.11.1
 opencv-python==4.11.0.86
 pillow==11.0.0
 plyfile==1.0.3

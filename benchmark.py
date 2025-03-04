@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 import torch
 
-from data_loader.pycolmap.pycolmap.scene_manager import SceneManager
+from data_loader import DataHandler
 from configs import *
 from radfoam_model.scene import RadFoamScene
 import radfoam
@@ -19,27 +19,23 @@ torch.random.manual_seed(seed)
 np.random.seed(seed)
 
 
-def test(args, pipeline_args, model_args, optimizer_args, dataset_args):
+def benchmark(args, pipeline_args, model_args, optimizer_args, dataset_args):
+    checkpoint = args.config.replace("/config.yaml", "")
+    os.makedirs(os.path.join(checkpoint, "test"), exist_ok=True)
     device = torch.device(args.device)
+
+    test_data_handler = DataHandler(
+        dataset_args, rays_per_batch=0, device=device
+    )
+    test_data_handler.reload(
+        split="test", downsample=min(dataset_args.downsample)
+    )
 
     # Setting up model
     model = RadFoamScene(
         args=model_args, device=device, attr_dtype=torch.float16
     )
 
-    checkpoint = args.config.replace("config.yaml", "")
-
-    scene = args.scene
-    if scene in ["garden", "stump", "bicycle"]:
-        downsample = 4
-    elif scene in ["room", "bonsai", "counter", "kitchen"]:
-        downsample = 2
-    elif scene in ["playroom", "drjohnson"]:
-        downsample = 1
-    else:
-        raise ValueError("Unknown scene")
-
-    # Loading checkpoint and computing model data
     model.load_pt(f"{checkpoint}/model.pt")
 
     points, attributes, point_adjacency, point_adjacency_offsets = (
@@ -57,51 +53,9 @@ def test(args, pipeline_args, model_args, optimizer_args, dataset_args):
         [adjacent_offsets, torch.zeros_like(adjacent_offsets[:, :1])], dim=1
     ).to(torch.half)
 
-    # Setting up cameras to send to CUDA
-    colmap_dir = os.path.join(
-        dataset_args.data_path, dataset_args.scene, "sparse/0/"
-    )
-    manager = SceneManager(colmap_dir)
-    manager.load_cameras()
-    manager.load_images()
-
-    cam = manager.cameras[1]
-    fx, fy, cx, cy = cam.fx, cam.fy, cam.cx, cam.cy
-    fx = fx / downsample
-    fy = fy / downsample
-
-    imdata = manager.images
-    w2c_mats = []
-    bottom = np.array([0, 0, 0, 1]).reshape(1, 4)
-    for k in imdata:
-        im = imdata[k]
-        rot = im.R()
-        trans = im.tvec.reshape(3, 1)
-        w2c = np.concatenate([np.concatenate([rot, trans], 1), bottom], axis=0)
-        w2c_mats.append(w2c)
-    w2c_mats = np.stack(w2c_mats, axis=0)
-
-    c2w_mats = np.linalg.inv(w2c_mats)
-
-    image_names = [imdata[k].name for k in imdata]
-    inds = np.argsort(image_names)
-    c2w_mats = c2w_mats[inds]
-    c2w = torch.tensor(c2w_mats, dtype=torch.float32)
-
-    # Camera parameters
-    if downsample > 1:
-        img_path = os.path.join(
-            dataset_args.data_path,
-            dataset_args.scene,
-            f"images_{downsample}",
-            image_names[0],
-        )
-    else:
-        img_path = os.path.join(
-            dataset_args.data_path, dataset_args.scene, "images", image_names[0]
-        )
-    img_0 = Image.open(img_path)
-    height, width = img_0.size[1], img_0.size[0]
+    c2w = test_data_handler.c2ws
+    width, height = test_data_handler.img_wh
+    fy = test_data_handler.fy
 
     cameras = []
     positions = []
@@ -201,7 +155,7 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    test(
+    benchmark(
         args,
         pipeline_params.extract(args),
         model_params.extract(args),
