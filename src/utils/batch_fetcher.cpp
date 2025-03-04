@@ -16,6 +16,10 @@
 #include "cuda_helpers.h"
 #include "random.h"
 
+#ifndef __UINT32_MAX__
+#define __UINT32_MAX__ (4294967295U)
+#endif
+
 namespace radfoam {
 
 constexpr int buffer_size = 4;
