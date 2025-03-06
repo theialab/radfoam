@@ -987,7 +987,7 @@ struct ViewerPrivate : public Viewer {
                     frame_duration)
                     .count();
             float w = 1000.0f * frame_duration_seconds * frame_duration_seconds;
-            w = (std::min)(1.0f, w);
+            w = std::min(1.0f, w);
             frame_rate = (1.0f - w) * frame_rate + w / frame_duration_seconds;
 
             delta_t = frame_duration_seconds;

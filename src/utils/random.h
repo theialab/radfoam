@@ -53,7 +53,7 @@ inline RADFOAM_HD uint32_t randint(RNGState &rngstate,
     uint32_t diff = max - min;
     uint32_t x = randint(rngstate);
     x /= (0xffffffff / diff);
-    return (std::min)(x, diff - 1) + min;
+    return std::min(x, diff - 1) + min;
 }
 
 /// @brief Generate a random float in the range [0, 1]
@@ -64,7 +64,7 @@ inline RADFOAM_HD float rand(RNGState &rngstate) {
 /// @brief Generate a random float from a unit normal distribution
 inline RADFOAM_HD float randn(RNGState &rngstate) {
     // sample normal distribution using Box - Muller transform
-    float u1 = (std::max)(rand(rngstate), (std::numeric_limits<float>::min)());
+    float u1 = std::max(rand(rngstate), std::numeric_limits<float>::min());
     float u2 = rand(rngstate);
 #ifdef __CUDA_ARCH__
     float result = sqrtf(-2 * logf(u1)) * cosf(2 * M_PIf * u2);
