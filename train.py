@@ -152,7 +152,7 @@ def train(args, pipeline_args, model_args, optimizer_args, dataset_args):
         torch.cuda.synchronize()
 
         data_iterator = train_data_handler.get_iter()
-        ray_batch, rgb_batch = next(data_iterator)
+        ray_batch, rgb_batch, alpha_batch = next(data_iterator)
 
         triangulation_update_period = 1
         iters_since_update = 1
@@ -171,7 +171,7 @@ def train(args, pipeline_args, model_args, optimizer_args, dataset_args):
                         split="train", downsample=downsample
                     )
                     data_iterator = train_data_handler.get_iter()
-                    ray_batch, rgb_batch = next(data_iterator)
+                    ray_batch, rgb_batch, alpha_batch = next(data_iterator)
 
                 depth_quantiles = (
                     torch.rand(*ray_batch.shape[:-1], 2, device=device)
@@ -194,6 +194,9 @@ def train(args, pipeline_args, model_args, optimizer_args, dataset_args):
                 color_loss = rgb_loss(rgb_batch, rgb_output)
                 opacity_loss = ((1 - opacity) ** 2).mean()
 
+                o = opacity.clamp(1e-6, 1-1e-6)
+                mask_entropy_loss = -(alpha_batch * torch.log(o) + (1 - alpha_batch)* torch.log(1 - o)).mean()
+
                 valid_depth_mask = (depth > 0).all(dim=-1)
                 quant_loss = (depth[..., 0] - depth[..., 1]).abs()
                 quant_loss = (quant_loss * valid_depth_mask).mean()
@@ -201,7 +204,11 @@ def train(args, pipeline_args, model_args, optimizer_args, dataset_args):
                     2 * i / pipeline_args.iterations, 1
                 )
 
-                loss = color_loss.mean() + opacity_loss + w_depth * quant_loss
+                # loss = color_loss.mean() + opacity_loss + w_depth * quant_loss
+
+                loss = color_loss.mean() + 0.01 * mask_entropy_loss
+                # set to 0.01 for now, move to pipeline_args later
+
 
                 model.optimizer.zero_grad(set_to_none=True)
 
@@ -210,7 +217,7 @@ def train(args, pipeline_args, model_args, optimizer_args, dataset_args):
                 event.record()
                 loss.backward()
                 event.synchronize()
-                ray_batch, rgb_batch = next(data_iterator)
+                ray_batch, rgb_batch, alpha_batch = next(data_iterator)
 
                 model.optimizer.step()
                 model.update_learning_rate(i)
