@@ -63,6 +63,11 @@ class BlenderDataset(Dataset):
         self.directions = get_ray_directions(
             self.h, self.w, [self.intrinsics[0, 0], self.intrinsics[1, 1]])  # (h, w, 3)
 
+        self.directions = self.directions / torch.norm(
+            self.directions, dim=-1, keepdim=True
+        )
+        # directions normalization
+
         self.poses = []
         self.cameras = []
         self.all_rays = []
