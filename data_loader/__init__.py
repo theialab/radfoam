@@ -7,10 +7,12 @@ import torch
 import radfoam
 
 from .colmap import COLMAPDataset
+from .blender import BlenderDataset
 
 
 dataset_dict = {
     "colmap": COLMAPDataset,
+    "blender": BlenderDataset,
 }
 
 
@@ -53,6 +55,9 @@ class DataHandler:
         self.fy = split_dataset.fy
         self.c2ws = split_dataset.poses
         self.rays, self.rgbs = split_dataset.all_rays, split_dataset.all_rgbs
+        self.alphas = getattr(
+            split_dataset, "all_alphas", torch.ones_like(self.rgbs[..., 0:1])
+        )
 
         self.viewer_up = get_up(self.c2ws)
         self.viewer_pos = self.c2ws[0, :3, 3]
@@ -98,6 +103,9 @@ class DataHandler:
                 self.train_rgbs = einops.rearrange(
                     self.rgbs, "n h w c -> (n h w) c"
                 )
+                self.train_alphas = einops.rearrange(
+                    self.alphas, "n h w 1 -> (n h w) 1"
+                )
 
                 self.batch_size = self.rays_per_batch
 
@@ -108,9 +116,13 @@ class DataHandler:
         rgb_batch_fetcher = radfoam.BatchFetcher(
             self.train_rgbs, self.batch_size, shuffle=True
         )
+        alpha_batch_fetcher = radfoam.BatchFetcher(
+            self.train_alphas, self.batch_size, shuffle=True
+        )
 
         while True:
             ray_batch = ray_batch_fetcher.next()
             rgb_batch = rgb_batch_fetcher.next()
+            alpha_batch = alpha_batch_fetcher.next()
 
-            yield ray_batch, rgb_batch
+            yield ray_batch, rgb_batch, alpha_batch
