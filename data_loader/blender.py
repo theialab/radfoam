@@ -6,8 +6,6 @@ from torch.utils.data import Dataset
 import json
 import math
 
-from arrgh import arrgh
-
 
 def get_ray_directions(H, W, focal, center=None):
     x = np.arange(W, dtype=np.float32) + 0.5
@@ -91,7 +89,9 @@ class BlenderDataset(Dataset):
                 img = img.resize(self.img_wh, Image.LANCZOS)
             img = img.convert("RGBA")
             rgbas = torch.tensor(np.array(img), dtype=torch.float32) / 255.0
-            rgbs = rgbas[..., :3] + (1 - rgbas[..., 3:4])  # white bg
+            rgbs = rgbas[..., :3] * rgbas[..., 3:4] + (
+                1 - rgbas[..., 3:4]
+            )  # white bg
             img.close()
 
             self.all_rays.append(world_rays)
