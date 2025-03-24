@@ -1,6 +1,9 @@
 find_package(CUDAToolkit REQUIRED)
 
 add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0 -D_USE_MATH_DEFINES)
+if (WIN32)
+  add_definitions(-DNOMINMAX)
+endif()
 
 list(
   APPEND
@@ -26,5 +29,11 @@ add_library(radfoam STATIC ${RADFOAM_CXX_SOURCES} ${RADFOAM_CUDA_SOURCES})
 target_include_directories(radfoam PUBLIC ${RADFOAM_INCLUDES})
 target_link_libraries(
   radfoam PUBLIC CUDA::cudart CUDA::cuda_driver ${GLFW_LIBRARY} gl3w imgui TBB::tbb)
-target_compile_options(radfoam PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo -O3
-                                       -Wall -Wno-unknown-pragmas> -O3)
+if (WIN32)
+  target_compile_options(radfoam PRIVATE 
+    $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo -O3> 
+    $<$<COMPILE_LANGUAGE:CXX>:/W1 /wd4068 /O2>
+  )
+else()
+  target_compile_options(radfoam PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-lineinfo -O3> -Wall -Wno-unknown-pragmas -O3)
+endif()
