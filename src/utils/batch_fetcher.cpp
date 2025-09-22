@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <cstdint>
 
 #include <atomic_queue/atomic_queue.h>
 
@@ -44,7 +45,7 @@ class BatchFetcherImpl : public BatchFetcher {
         worker = std::thread([=] {
             try {
                 size_t num_elemnts = num_bytes / stride;
-                if (num_elemnts > (size_t)__UINT32_MAX__) {
+                if (num_elemnts > (size_t)UINT32_MAX) {
                     throw std::runtime_error("Too many elements");
                 }
                 uint32_t batch_idx = 0;

@@ -24,12 +24,16 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/external"
      "${CMAKE_SOURCE_DIR}/external/submodules")
+if (WIN32)
+  list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Lib/site-packages/pybind11/share/cmake/pybind11")
+  list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Lib/site-packages/pybind11/share/cmake/pybind11")
+  list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.venv/Lib/site-packages/torch/share/cmake/Torch")
+endif()
 
 find_package(
   Python3
   COMPONENTS Interpreter Development.Module
   REQUIRED)
-
 find_package(pybind11 REQUIRED)
 
 if(NOT Torch_DIR)

@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <stdexcept>
+#include <string>
 
 #include <GL/gl3w.h>
 #include <cuda.h>
