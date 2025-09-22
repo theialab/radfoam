@@ -32,6 +32,20 @@ enum TraversalAction {
     Terminate,
 };
 
+__forceinline__ __host__ int host_ffs(uint32_t x) {
+    if (x == 0) return 0;
+
+#if defined(_WIN32) || defined(_WIN64)
+    unsigned long index;
+    if (_BitScanForward(&index, static_cast<unsigned long>(x))) {
+        return static_cast<int>(index);
+    }
+    return 0;
+#else
+    return __builtin_ctz(x);
+#endif
+}
+
 /// @brief Traverse the AABB tree in a depth-first manner
 template <typename Functor>
 __forceinline__ __host__ __device__ void
@@ -59,7 +73,7 @@ traverse(uint32_t num_points, uint32_t max_depth, Functor functor) {
             min(__ffs(current_node) - 1, (int)current_depth);
 #else
         uint32_t step_up_amount =
-            min(__builtin_ctz(current_node), (int)current_depth);
+            min(host_ffs(current_node), (int)current_depth);
 #endif
         current_depth -= step_up_amount;
         current_node = current_node >> step_up_amount;

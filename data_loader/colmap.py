@@ -87,7 +87,7 @@ class COLMAPDataset:
         self.all_rgbs = []
         for image in tqdm(self.images):
             c2w = torch.tensor(
-                image.cam_from_world.inverse().matrix(), dtype=torch.float32
+                image.cam_from_world().inverse().matrix(), dtype=torch.float32
             )
             self.poses.append(c2w)
             world_ray_dirs = torch.einsum(

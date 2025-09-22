@@ -27,6 +27,13 @@ After installing the CUDA Toolkit and initializing your python virtual environme
 
     pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
 
+## FOR WINDOWS (NVIDIA CUDA)
+Make sure you install CUDA toolkit [CUDA TOOLKIT 129](https://developer.nvidia.com/cuda-12-9-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11)
+
+Then, install torch with cuda 12.9 compute platform
+
+    pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu129
+
 From here, there are two options:
 
 ### Option 1: build with `pip install`
