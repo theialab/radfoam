@@ -281,18 +281,17 @@ __global__ void backward(TraceSettings settings,
         dL_dt0 += -dL_ddelta_t;
         float dL_dt1 = dL_ddelta_t;
 
-        Vec3f dt0_dprev_point;
+        Vec3f dt0_dprev_point = Vec3f::Zero();
+        Vec3f dt0_dcurrent_point = Vec3f::Zero();
         if (prev_point_idx != UINT32_MAX) {
             dt0_dprev_point =
                 cell_intersection_grad(prev_point, current_point, ray);
-        } else {
-            dt0_dprev_point = Vec3f::Zero();
+            dt0_dcurrent_point =
+                cell_intersection_grad(current_point, prev_point, ray);
         }
 
         Vec3f dt1_dcurrent_point =
             cell_intersection_grad(current_point, next_point, ray);
-        Vec3f dt0_dcurrent_point =
-            cell_intersection_grad(current_point, prev_point, ray);
 
         Vec3f dt1_dnext_point =
             cell_intersection_grad(next_point, current_point, ray);
